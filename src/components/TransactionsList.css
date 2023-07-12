@@ -1,2 +1,7 @@
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+html {
+    @apply border-gray-dark;
+  }

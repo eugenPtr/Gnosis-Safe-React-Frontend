@@ -2,10 +2,27 @@ module.exports = {
     purge: ['./src/**/*.{js,jsx,ts,tsx}', './public/index.html'],
     darkMode: false,
     theme: {
-      extend: {},
+      
+      fontFamily: {
+        sans: ['PP Supply Mono', 'monospace'],
+        serif: ['Merriweather', 'serif'],
+      },
+      extend: {
+        colors: {
+          'primary-green': '#00EC97',
+          'primary-black': '#151718',
+          'accent-yellow': '#F2FF9F',
+          'accent-green': '#17D9D4',
+          'accent-blue': '#3D7FFF',
+          'gray-dark': '#3E3E3E',
+          'white': '#FFFFFF',
+        },
+      },
     },
     variants: {
-      extend: {},
+      extend: {
+        borderColor: '#3E3E3E'
+      },
     },
     plugins: [],
   }
