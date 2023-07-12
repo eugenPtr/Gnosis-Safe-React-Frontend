@@ -28,16 +28,16 @@ export default function TransactionsList({safeAddr, apiUrl}) {
     };
 
     return (
-        <div className="bg-primary-black text-white border">
+        <div className="bg-primary-black text-white border border-gray-dark">
             <h1 className="text-xl font-bold px-8 py-4">Transactions</h1>
             {/* Tabs */}
             {/* Tx List */}
             <Tabs.Root className="" defaultValue="tab1">
                 <Tabs.List className="grid grid-cols-2 text-center " aria-label="">
-                    <Tabs.Trigger className="py-3 px-5 border hover:text-primary-green focus:text-primary-green focus:border-b-primary-green focus:border-b" value="tab1">
+                    <Tabs.Trigger className="py-3 px-5 border border-gray-dark hover:text-primary-green focus:text-primary-green focus:border-b-primary-green focus:border-b" value="tab1">
                         Queue
                     </Tabs.Trigger>
-                    <Tabs.Trigger className="py-3 px-5 border hover:text-primary-green focus:text-primary-green focus:border-b-primary-green focus:border-b" value="tab2">
+                    <Tabs.Trigger className="py-3 px-5 border border-gray-dark hover:text-primary-green focus:text-primary-green focus:border-b-primary-green focus:border-b" value="tab2">
                         History
                     </Tabs.Trigger>
                 </Tabs.List>
