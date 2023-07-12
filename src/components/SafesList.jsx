@@ -9,14 +9,14 @@ export default function SafesList({walletAddr, apiUrl}) {
     useEffect(() => {
         async function fetchSafeData() {
             const response = await fetch(`${apiUrl}/api/v1/owners/${walletAddr}/safes`)
-            //const safes = await response.json()
-            const safes = {
+            const safes = await response.json()
+            /*const safes = {
                 safes: [
                     "0x1f9090aaE28b8a3dCeaDf281B0F12828e676c326",
                     "0x86bb3fEABAe516b778e1CF7E4aA17Abf70d71F4F",
                     "0xdAC17F958D2ee523a2206206994597C13D831ec7",
                 ]
-            }
+            }*/
             setSafes(safes.safes)
 
         }
