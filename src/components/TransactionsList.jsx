@@ -92,7 +92,10 @@ export default function TransactionsList({safeAddr, apiUrl}) {
                                         <div className="p-3">
                                             <p>To: {tx.to}</p>
                                             {tx.to !== safeAddr && 
-                                                <p>Confirmations: {tx.confirmations?.length}/{tx.confirmationsRequired}</p>
+                                                <div>
+                                                    <p>Confirmations: {tx.confirmations?.length}/{tx.confirmationsRequired}</p>
+                                                </div>
+                                                
                                             }
                         
                                         </div>
