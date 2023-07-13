@@ -4,6 +4,7 @@ import SafesList from './components/SafesList'
 import TransactionsList from './components/TransactionsList';
 import CreateSafe from './components/CreateSafe';
 import NewTransaction from './components/NewTransaction';
+import NewTransactionEthers from './components/NewTransactionEthers';
 import {
   useAccount,
   useNetwork,
@@ -26,7 +27,8 @@ function App() {
         <SafesList walletAddr={address} apiUrl="https://safe-transaction-gnosis-chain.safe.global/"></SafesList>
         <TransactionsList safeAddr="0x6106FB94E31B83D0A15432FCA2927B838fB6D025" apiUrl="https://safe-transaction-gnosis-chain.safe.global/"></TransactionsList>
         <CreateSafe chain={chain} connectedWalletAddr={address}></CreateSafe>
-        <NewTransaction chain={chain} connectedWalletAddr={address }safeAddr="0x6106FB94E31B83D0A15432FCA2927B838fB6D025" apiUrl="https://safe-transaction-gnosis-chain.safe.global/" chainNativeToken={{symbol: "xDai", icon: "https://s2.coinmarketcap.com/static/img/coins/64x64/8635.png", decimals: 18}}></NewTransaction>
+        <NewTransaction chain={chain} connectedWalletAddr={address} safeAddr="0x6106FB94E31B83D0A15432FCA2927B838fB6D025" apiUrl="https://safe-transaction-gnosis-chain.safe.global" chainNativeToken={{symbol: "xDai", icon: "https://s2.coinmarketcap.com/static/img/coins/64x64/8635.png", decimals: 18}}></NewTransaction>
+        {/* <NewTransactionEthers chain={chain} connectedWalletAddr={address} safeAddr="0x6106FB94E31B83D0A15432FCA2927B838fB6D025" apiUrl="https://safe-transaction-gnosis-chain.safe.global" chainNativeToken={{symbol: "xDai", icon: "https://s2.coinmarketcap.com/static/img/coins/64x64/8635.png", decimals: 18}}></NewTransactionEthers> */}
     </div>
 
 

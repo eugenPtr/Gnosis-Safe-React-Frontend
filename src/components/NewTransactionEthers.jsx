@@ -1,27 +1,20 @@
 import "./NewTransaction.css";
 import { useState, useEffect } from "react";
-import { useProvider, useContractWrite, useSigner } from "wagmi";
 import { ethers } from "ethers";
 
 // Inputs: Safe Addr & API URL
 // List balances, owners and threshold
-export default function NewTransaction({chain, connectedWalletAddr, safeAddr, apiUrl, chainNativeToken}) {
-    const [threshold, setThreshold] = useState(1000)
-    const [owners, setOwners] = useState([])
+export default function NewTransactionEthers({chain, connectedWalletAddr, safeAddr, apiUrl, chainNativeToken}) {
     const [balances, setBalances] = useState([])
-    const [valueInUSD, setValueInUSD] = useState(null)
-    const [openOwners, setOpenOwners] = useState(false)
-    const [openBalances, setOpenBalances] = useState(false)
     const [recipient, setRecipient] = useState("")
-    const [amount, setAmount] = useState()
+    const [amount, setAmount] = useState(0)
     const [safeNonce, setSafeNonce] = useState()
     const [txHash, setTxHash] = useState("0x")
     const [signature, setSignature] = useState()
     const [singletonAbi, setSingletonAbi] = useState()
     const [singletonAddress, setSingletonAddress] = useState()
-
-    const provider = useProvider()
-    const signer = useSigner()
+    const [signer, setSigner] = useState()
+    const [contract, setContract] = useState(null)
     
     useEffect(() => {
         async function fetchSafeData() {
@@ -43,30 +36,47 @@ export default function NewTransaction({chain, connectedWalletAddr, safeAddr, ap
                 "https://raw.githubusercontent.com/safe-global/safe-deployments/main/src/assets/v1.3.0/gnosis_safe_l2.json"
             );
             const singletonJson = await singleton.json();
+            const singletonAddr = singletonJson.networkAddresses[chain.id.toString()]
             setSingletonAbi(singletonJson.abi);
-            setSingletonAddress(singletonJson.networkAddresses[chain.id.toString()])
+            setSingletonAddress(singletonAddr)
+            const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+            // Prompt user for account connections
+            await provider.send("eth_requestAccounts", []);
+            setSigner(provider.getSigner());
+            console.log("Account:", await provider.getSigner().getAddress())
+
+            const contr = new ethers.Contract(singletonAddr, singletonJson.abi, provider)
+            setContract(contr)
+            console.log(contr);
 
         }
         fetchSafeData();
-    }, [apiUrl, safeAddr, chainNativeToken]);
+    }, [apiUrl, safeAddr, chainNativeToken, chain]);
 
-    const { data, isLoading, isSuccess, write } = useContractWrite({
-        address: singletonAddress,
-        abi: singletonAbi,
-        functionName: 'getTransactionHash',
-        args: [recipient, Number(amount) * 10**18 , new Uint8Array(0), 0, 0, 0, "0x0000000000000000000000000000000000000000", safeNonce],
-        onSettled(data, error) {
-            console.log('Settled', { data, error })
-        },
-    })
+    if (contract) {
+        contract.getTransactionHash(
+            ethers.utils.getAddress(recipient),
+            amount,
+            new Uint8Array(0),
+            0,
+            0,
+            0,
+            0,
+            "0x0000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000",
+            safeNonce
+        ).then((res) => {
+            console.log(res)
+        })
+    }
+    
 
     function submitTransaction() {
-        write()
         // craft transaction from state vars
         const transaction = {
             safe: safeAddr,
             to: recipient,
-            value: Number(amount) * 10**18,
+            value: amount,
             data: new Uint8Array(0).toString(),
             operation: 0,
             gasToken: "0x0000000000000000000000000000000000000000",
@@ -119,7 +129,7 @@ export default function NewTransaction({chain, connectedWalletAddr, safeAddr, ap
                 </div>
                 <div className="mb-6">
                     <label className="block mb-2 text-sm font-medium text-gray-light">Amount</label>
-                    <input type="number" placeholder="0" value={amount} onChange={(e) => setAmount(e.target.value)} className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-primary-green block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required/>
+                    <input type="number" placeholder="0" value={amount} onChange={(e) => setAmount(Number(e.target.value) * 10**18)} className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-primary-green block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required/>
                 </div>
                 
                 <button type="submit" onClick={() => submitTransaction()} className="text-white bg-primary-green focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center 0">Submit</button>
