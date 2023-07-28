@@ -32,13 +32,23 @@ function fetchData() {
           res.body[0].balance / Math.pow(10, props.chainNativeToken.decimals),
       },
     ];
-    console.log(safeBalances);
-    console.log("Native token balance", JSON.parse(res), res.body[0]);
-    // console.log(safeBalances);
+
     const totalValueUSD = res.body.reduce(
       (acc, token) => acc + Number(token.fiatBalance),
       0
     );
+
+    console.log("Logo URI", res.body[1].token.logoUri);
+
+    res.body
+      .filter((item) => item.token != null)
+      .forEach((item) =>
+        safeBalances.push({
+          icon: item.token.logoUri,
+          symbol: item.token.symbol,
+          amount: item.balance / Math.pow(10, item.token.decimals),
+        })
+      );
     console.log(totalValueUSD);
     State.update({
       balances: safeBalances,
@@ -52,6 +62,9 @@ fetchData();
 const TWStyles = state.styles;
 const css = fetch(
   "https://gist.githubusercontent.com/Pikqi/658b6ee444d26dd69f0d5150797077dd/raw/d8f929729176bb30d86e2839443fddb83a87a685/tw-all-classes.css"
+);
+const fontAwesome = fetch(
+  "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
 );
 
 if (!css.ok) {
@@ -67,42 +80,57 @@ if (!css.ok) {
 }
 
 if (!state.styles) {
+  const colors = {
+    primaryGreen: "#00EC97",
+    primaryBlack: "#151718",
+    accentYellow: "#F2FF9F",
+    accentGreen: "#17D9D4",
+    accentBlue: "#3D7FFF",
+    darkGray: "#3E3E3E",
+    lightGray: "#B6B6B6",
+  };
+
   State.update({
     styles: styled.div`
       ${css.body}
-
+      ${fontAwesome.body}
       .bg-primary-black {
-        background-color: #1C1C1C
+        background-color: ${colors.primaryBlack}
       }
       .bg-primary-green {
-        background-color: #00EC97
+        background-color: ${colors.primaryGreen}
       }
-      .border-gray-dark {
-        border-color: #3E3E3E
+      .text-gray {
+        color: ${colors.lightGray}
+      }
+      .dot {
+        height: 40px;
+        width: 40px;
+        background-color: #bbb;
+        border-radius: 50%;
+        display: inline-block;
+      }
+      ul {
+        list-style-type: none;
+      }
+      .border-b {
+        border-bottom: 1px solid ${colors.darkGray};
+      }
+      .border {
+        border: 1px solid ${colors.darkGray};
       }
     `,
   });
 }
 
-const owners = ["addr1", "addr2"];
-const balances = [
-  {
-    symbol: "USDC",
-    amount: 100,
-  },
-];
-
 return (
   <TWStyles>
-    <div className="bg-primary-black text-white border border-gray-dark border-solid">
-      <h1 className="text-xl font-bold border-b border-gray-dark border-solid py-3 px-8">
-        Overview
-      </h1>
-      <div className="px-8 py-5 flex flex-col gap-3">
-        <div>
+    <div className="bg-primary-black text-white border">
+      <h1 className="text-xl font-bold border-b py-3 px-8">Overview</h1>
+      <div className="py-5 flex flex-col gap-3">
+        <div className="px-8">
           <p>Account</p>
           <div className="grid grid-cols-12 gap-4 items-center mb-3">
-            <div className="bg-slate-300 rounded-full w-10 h-10"></div>
             <div className="">{props.safeAddr}</div>
             <div className="col-start-11 col-span-2 bg-primary-green rounded-3xl h-full flex items-center justify-center">
               <span className="">{props.chain}</span>
@@ -110,32 +138,71 @@ return (
           </div>
         </div>
 
-        <div className="flex justify-between items-center">
+        <div className="px-8 flex justify-between items-center border-b border-gray-dark">
           <div className="">
-            <p className="text-gray-light">Value</p>
+            <p className="text-gray">Value</p>
             <p>${state.valueInUSD}</p>
           </div>
           <div className="">
-            <p className="text-gray-light">Threshold</p>
+            <p className="text-gray">Threshold</p>
             <p>{state.threshold}</p>
           </div>
           <div className="">
-            <p className="text-gray-light">Owners</p>
+            <p className="text-gray">Owners</p>
             <p>{state.owners.length}</p>
           </div>
         </div>
         <br></br>
         <Collapsible.Root
-          className=""
+          className="px-8 border-b"
           open={state.openOwners}
           onOpenChange={() => State.update({ openOwners: !state.openOwners })}
         >
           <div className="flex justify-between">
             <p> Owners </p>
             <Collapsible.Trigger asChild>
-              <button className="">
-                {state.openOwners ? <label>Close</label> : <label>Open</label>}
-              </button>
+              <span className="">
+                {state.openOwners ? (
+                  <svg viewBox="0 0 24 24" fill="none" className="h-8 w-8">
+                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                    <g
+                      id="SVGRepo_tracerCarrier"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    ></g>
+                    <g id="SVGRepo_iconCarrier">
+                      {" "}
+                      <g id="Arrow / Caret_Down_SM">
+                        {" "}
+                        <path
+                          id="Vector"
+                          d="M15 11L12 14L9 11"
+                          stroke="#00ec97"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        ></path>{" "}
+                      </g>{" "}
+                    </g>
+                  </svg>
+                ) : (
+                  <svg
+                    fill="none"
+                    stroke="#00ec97"
+                    className="h-8 w-8"
+                    viewBox="0 0 24 24"
+                  >
+                    {" "}
+                    <path
+                      d="m9 13 3-3 3 3"
+                      stroke="#00ec97"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                    />{" "}
+                  </svg>
+                )}
+              </span>
             </Collapsible.Trigger>
           </div>
 
@@ -149,7 +216,7 @@ return (
         </Collapsible.Root>
 
         <Collapsible.Root
-          className=""
+          className="px-8 border-b"
           open={state.openBalances}
           onOpenChange={() =>
             State.update({ openBalances: !state.openBalances })
@@ -158,23 +225,66 @@ return (
           <div className="flex justify-between">
             <p> Balances </p>
             <Collapsible.Trigger asChild>
-              <button className="">
+              <span className="">
                 {state.openBalances ? (
-                  <label>Close</label>
+                  <svg viewBox="0 0 24 24" fill="none" className="h-8 w-8">
+                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                    <g
+                      id="SVGRepo_tracerCarrier"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    ></g>
+                    <g id="SVGRepo_iconCarrier">
+                      {" "}
+                      <g id="Arrow / Caret_Down_SM">
+                        {" "}
+                        <path
+                          id="Vector"
+                          d="M15 11L12 14L9 11"
+                          stroke="#00ec97"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        ></path>{" "}
+                      </g>{" "}
+                    </g>
+                  </svg>
                 ) : (
-                  <label>Open</label>
+                  <svg
+                    fill="none"
+                    stroke="#00ec97"
+                    className="h-8 w-8"
+                    viewBox="0 0 24 24"
+                  >
+                    {" "}
+                    <path
+                      d="m9 13 3-3 3 3"
+                      stroke="#00ec97"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                    />{" "}
+                  </svg>
                 )}
-              </button>
+              </span>
             </Collapsible.Trigger>
           </div>
 
           <Collapsible.Content>
             <ul className="px-3">
               {state.balances.map((token) => (
-                <li className="" key={token.symbol}>
-                  <p className="">
-                    {token.symbol} - {token.amount}
-                  </p>
+                <li className="flex gap-4 items-center mb-3" key={token.symbol}>
+                  {token.icon ? (
+                    <img
+                      className="inline h-8 w-8 rounded-full"
+                      src={token.icon}
+                    />
+                  ) : (
+                    <span className="dot"></span>
+                  )}
+
+                  <span className="inline">{token.symbol}</span>
+                  <span className="justify-self-end">{token.amount}</span>
                 </li>
               ))}
             </ul>
