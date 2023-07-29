@@ -36,12 +36,12 @@ if (state.sender === null) {
 
 // detect and set given safe address to state
 if (state.safeAddress) {
-  const _url = `https://safe-transaction-${state.chainId}.safe.global/api`;
-  const _baseUrl = _url + `/v1/safes/${state.safeAddress}/`;
+  const _baseUrl = `https://safe-transaction-${state.chainId}.safe.global/api`;
   State.update({ baseUrl: _baseUrl });
 
   // get proposed transactions from the backend
-  const response = fetch(state.baseUrl + "all-transactions/");
+  const url = _baseUrl + `/v1/safes/${state.safeAddress}/all-transactions`;
+  const response = fetch(url);
   if (response.ok) {
     const notExecuted = response.body.results.filter(
       (tx) => tx.executionDate === null
@@ -58,8 +58,29 @@ const selectTransaction = (tx) => {
 // sign relevant transaction
 const signTransaction = () => {
   if (state.selectedTransaction) {
-    // todo
-    return;
+    const selectedTxHash = state.selectedTransaction.safeTxHash;
+    const signer = Ethers.provider().getSigner();
+    signer.signMessage(ethers.utils.arrayify(selectedTxHash)).then((sig) => {
+      const setV = ethers.utils.hexDataSlice(sig, 0, 64) + "1f";
+
+      const url =
+        state.baseUrl +
+        `/v1/multisig-transactions/${selectedTxHash}/confirmations/`;
+      const params = JSON.stringify({ signature: setV });
+      const options = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: params,
+      };
+
+      //   post confirmed sig with set V to gnosis API backend
+      asyncFetch(url, options).then((res) => {
+        // if status is 201 then confirmation was successful
+        console.log(res);
+      });
+    });
   } else {
     console.log("Please select a transaction to sign.");
   }
@@ -114,7 +135,7 @@ return (
         </li>
       ))}
     </ul>
-    <button onClick={signTransaction()} label="SignButton">
+    <button onClick={() => signTransaction()} label="SignButton">
       <span>Sign Selected Transaction</span>
     </button>
     <Web3Connect className="web3-connect" connectLabel="Connect Wallet" />
