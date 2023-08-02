@@ -103,32 +103,27 @@ const selectTransaction = (tx) => {
 
 // sign relevant transaction
 const signTransaction = (safeTxHash) => {
-  if (state.selectedTransaction) {
-    const signer = Ethers.provider().getSigner();
-    signer.signMessage(ethers.utils.arrayify(safeTxHash)).then((sig) => {
-      const setV = ethers.utils.hexDataSlice(sig, 0, 64) + "1f";
+  const signer = Ethers.provider().getSigner();
+  signer.signMessage(ethers.utils.arrayify(safeTxHash)).then((sig) => {
+    const setV = ethers.utils.hexDataSlice(sig, 0, 64) + "1f";
 
-      const url =
-        state.baseUrl +
-        `/v1/multisig-transactions/${safeTxHash}/confirmations/`;
-      const params = JSON.stringify({ signature: setV });
-      const options = {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: params,
-      };
+    const url =
+      state.baseUrl + `/v1/multisig-transactions/${safeTxHash}/confirmations/`;
+    const params = JSON.stringify({ signature: setV });
+    const options = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: params,
+    };
 
-      //   post confirmed sig with set V to gnosis API backend
-      asyncFetch(url, options).then((res) => {
-        // if status is 201 then confirmation was successful
-        console.log(res);
-      });
+    //   post confirmed sig with set V to gnosis API backend
+    asyncFetch(url, options).then((res) => {
+      // if status is 201 then confirmation was successful
+      console.log(res);
     });
-  } else {
-    console.log("Please select a transaction to sign.");
-  }
+  });
 };
 
 // I don't know any CSS so please forgive the following fuckery
