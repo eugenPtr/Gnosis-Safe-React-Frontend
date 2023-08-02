@@ -69,6 +69,13 @@ if (props.safeAddress) {
           safeTxHash: tx.safeTxHash,
           to: tx.to,
           value: tx.value,
+          data: tx.data,
+          operation: tx.operation,
+          safeTxGas: tx.safeTxGas,
+          baseGas: tx.baseGas,
+          gasPrice: tx.gasPrice,
+          gasToken: tx.gasToken,
+          refundReceiver: tx.refundReceiver,
           symbol: "xDai",
           decimals: 18,
           confirmationsRequired: tx.confirmationsRequired,
@@ -81,6 +88,13 @@ if (props.safeAddress) {
           safeTxHash: tx.safeTxHash,
           to: tx.dataDecoded.parameters[0].value,
           value: tx.dataDecoded.parameters[1].value,
+          data: tx.data,
+          operation: tx.operation,
+          safeTxGas: tx.safeTxGas,
+          baseGas: tx.baseGas,
+          gasPrice: tx.gasPrice,
+          gasToken: tx.gasToken,
+          refundReceiver: tx.refundReceiver,
           symbol: token.body.symbol,
           decimals: token.body.decimals,
           confirmationsRequired: tx.confirmationsRequired,
@@ -124,6 +138,35 @@ const signTransaction = (safeTxHash) => {
       console.log(res);
     });
   });
+};
+
+const execTransaction = (tx) => {
+  // get Gnosis Safe contract ABI
+  const abiUrl =
+    "https://raw.githubusercontent.com/safe-global/safe-deployments/main/src/assets/v1.3.0/gnosis_safe_l2.json";
+  const abi = fetch(abiUrl);
+  const signer = Ethers.provider().getSigner();
+  let abiJson;
+  let safeContract;
+  if (abi.ok) {
+    abiJson = JSON.parse(abi.body)["abi"];
+    safeContract = new ethers.Contract(props.safeAddress, abiJson, signer);
+    const signatures = tx.confirmations.map((obj) => obj.signature);
+
+    // todo contract call seems entirely correct but throws gas estimation error
+    safeContract.execTransaction(
+      tx.to,
+      tx.value,
+      tx.data,
+      tx.operation,
+      tx.safeTxGas,
+      tx.baseGas,
+      tx.gasPrice,
+      tx.gasToken,
+      tx.refundReceiver,
+      ethers.utils.hexConcat(signatures)
+    );
+  }
 };
 
 // I don't know any CSS so please forgive the following fuckery
@@ -331,7 +374,10 @@ return (
                         </p>
                         {tx.confirmations?.length ==
                         tx.confirmationsRequired ? (
-                          <button> Execute </button>
+                          <button onClick={() => execTransaction(tx)}>
+                            {" "}
+                            Execute{" "}
+                          </button>
                         ) : (
                           <button
                             onClick={() => signTransaction(tx.safeTxHash)}
