@@ -1,4 +1,4 @@
-/Connect to Wallet
+// Connect to Wallet
 if (
   state.chainId === undefined &&
   ethers !== undefined &&
