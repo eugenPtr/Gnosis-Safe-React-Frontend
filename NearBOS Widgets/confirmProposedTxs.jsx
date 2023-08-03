@@ -153,11 +153,13 @@ const execTransaction = (tx) => {
     safeContract = new ethers.Contract(props.safeAddress, abiJson, signer);
     const signatures = tx.confirmations.map((obj) => obj.signature);
 
+    const data = tx.data == null ? '0x' : tx.data;
+
     // todo contract call seems entirely correct but throws gas estimation error
     safeContract.execTransaction(
       tx.to,
       tx.value,
-      tx.data,
+      data,
       tx.operation,
       tx.safeTxGas,
       tx.baseGas,
