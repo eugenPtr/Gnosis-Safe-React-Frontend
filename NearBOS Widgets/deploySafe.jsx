@@ -19,7 +19,7 @@ initState({
   singletonAddress: "",
   walletOwners: [walletOwner],
   walletNonce: 0,
-  threeshold: "",
+  threshold: "",
   encondeDatas: "",
 });
 
@@ -218,17 +218,17 @@ return (
       </button>
       <div>
         <div>
-          <div className="text-green py-3">Threeshold</div>
+          <div className="text-green py-3">Threshold</div>
           <label className="text-gray text-sm py-1">
             Any transaction requires the confirmation of:
             <input
               className="rounded-full border-opacity-25 bg-primary-dark-gray py-3 px-6"
               type="text"
               style={{ width: "82%" }}
-              value={threeshold}
+              value={threshold}
               onChange={(e) => {
                 let a = e.target.value;
-                State.update({ threeshold: a });
+                State.update({ threshold: a });
               }}
             />
           </label>
@@ -241,7 +241,7 @@ return (
             "setup(address[],uint256, address,bytes, address, address, uint256, address)",
             [
               state.walletOwners,
-              state.threeshold,
+              state.threshold,
               address0,
               bytes0,
               address0,
