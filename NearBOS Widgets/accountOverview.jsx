@@ -1,4 +1,5 @@
-const { chain, safeAddr, apiBaseURL, chainNativeToken } = props;
+if (!props.apiBaseUrl || !props.safeAddress || !props.chainNativeToken)
+  return "[New Transaction] One of the following props is missing: apiBaseUrl, safeAddress, chainNativeToken";
 
 State.init({
   threshold: null,
@@ -11,7 +12,7 @@ State.init({
 
 function fetchData() {
   // Fetch onwers and threshold
-  asyncFetch(`${props.apiBaseUrl}/api/v1/safes/${props.safeAddr}`).then(
+  asyncFetch(`${props.apiBaseUrl}/api/v1/safes/${props.safeAddress}`).then(
     (res) => {
       State.update({
         threshold: res.body.threshold,
@@ -22,7 +23,7 @@ function fetchData() {
 
   // Fetch balances
   asyncFetch(
-    `${props.apiBaseUrl}/api/v1/safes/${props.safeAddr}/balances/usd?trusted=false&exclude_spam=false`
+    `${props.apiBaseUrl}/api/v1/safes/${props.safeAddress}/balances/usd?trusted=false&exclude_spam=false`
   ).then((res) => {
     let safeBalances = [
       {
@@ -38,8 +39,6 @@ function fetchData() {
       0
     );
 
-    console.log("Logo URI", res.body[1].token.logoUri);
-
     res.body
       .filter((item) => item.token != null)
       .forEach((item) =>
@@ -49,7 +48,6 @@ function fetchData() {
           amount: item.balance / Math.pow(10, item.token.decimals),
         })
       );
-    console.log(totalValueUSD);
     State.update({
       balances: safeBalances,
       valueInUSD: totalValueUSD,
@@ -62,9 +60,6 @@ fetchData();
 const TWStyles = state.styles;
 const css = fetch(
   "https://gist.githubusercontent.com/Pikqi/658b6ee444d26dd69f0d5150797077dd/raw/d8f929729176bb30d86e2839443fddb83a87a685/tw-all-classes.css"
-);
-const fontAwesome = fetch(
-  "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
 );
 
 if (!css.ok) {
@@ -103,6 +98,9 @@ if (!state.styles) {
       .text-gray {
         color: ${colors.lightGray}
       }
+      .text-green {
+        color: ${colors.primaryGreen}
+      }
       .dot {
         height: 40px;
         width: 40px;
@@ -126,15 +124,14 @@ if (!state.styles) {
 return (
   <TWStyles>
     <div className="bg-primary-black text-white border">
-      <h1 className="text-xl font-bold border-b py-3 px-8">Overview</h1>
+      <h1 className="text-xl font-bold text-green border-b py-3 px-8">
+        Overview
+      </h1>
       <div className="py-5 flex flex-col gap-3">
         <div className="px-8">
           <p>Account</p>
           <div className="grid grid-cols-12 gap-4 items-center mb-3">
-            <div className="">{props.safeAddr}</div>
-            <div className="col-start-11 col-span-2 bg-primary-green rounded-3xl h-full flex items-center justify-center">
-              <span className="">{props.chain}</span>
-            </div>
+            <div className="">{props.safeAddress}</div>
           </div>
         </div>
 
@@ -163,43 +160,24 @@ return (
             <Collapsible.Trigger asChild>
               <span className="">
                 {state.openOwners ? (
-                  <svg viewBox="0 0 24 24" fill="none" className="h-8 w-8">
-                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                    <g
-                      id="SVGRepo_tracerCarrier"
+                  <svg className="h-8 w-8" viewBox="0 0 24 24">
+                    <path
+                      d="m15 11-3 3-3-3"
+                      stroke="#00ec97"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                    ></g>
-                    <g id="SVGRepo_iconCarrier">
-                      {" "}
-                      <g id="Arrow / Caret_Down_SM">
-                        {" "}
-                        <path
-                          id="Vector"
-                          d="M15 11L12 14L9 11"
-                          stroke="#00ec97"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        ></path>{" "}
-                      </g>{" "}
-                    </g>
+                      stroke-width="2"
+                    />
                   </svg>
                 ) : (
-                  <svg
-                    fill="none"
-                    stroke="#00ec97"
-                    className="h-8 w-8"
-                    viewBox="0 0 24 24"
-                  >
-                    {" "}
+                  <svg stroke="#00ec97" className="h-8 w-8" viewBox="0 0 24 24">
                     <path
                       d="m9 13 3-3 3 3"
                       stroke="#00ec97"
                       stroke-linecap="round"
                       stroke-linejoin="round"
                       stroke-width="2"
-                    />{" "}
+                    />
                   </svg>
                 )}
               </span>
@@ -227,43 +205,24 @@ return (
             <Collapsible.Trigger asChild>
               <span className="">
                 {state.openBalances ? (
-                  <svg viewBox="0 0 24 24" fill="none" className="h-8 w-8">
-                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                    <g
-                      id="SVGRepo_tracerCarrier"
+                  <svg className="h-8 w-8" viewBox="0 0 24 24">
+                    <path
+                      d="m15 11-3 3-3-3"
+                      stroke="#00ec97"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                    ></g>
-                    <g id="SVGRepo_iconCarrier">
-                      {" "}
-                      <g id="Arrow / Caret_Down_SM">
-                        {" "}
-                        <path
-                          id="Vector"
-                          d="M15 11L12 14L9 11"
-                          stroke="#00ec97"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        ></path>{" "}
-                      </g>{" "}
-                    </g>
+                      stroke-width="2"
+                    />
                   </svg>
                 ) : (
-                  <svg
-                    fill="none"
-                    stroke="#00ec97"
-                    className="h-8 w-8"
-                    viewBox="0 0 24 24"
-                  >
-                    {" "}
+                  <svg stroke="#00ec97" className="h-8 w-8" viewBox="0 0 24 24">
                     <path
                       d="m9 13 3-3 3 3"
                       stroke="#00ec97"
                       stroke-linecap="round"
                       stroke-linejoin="round"
                       stroke-width="2"
-                    />{" "}
+                    />
                   </svg>
                 )}
               </span>

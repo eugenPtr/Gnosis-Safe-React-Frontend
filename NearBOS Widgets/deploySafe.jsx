@@ -12,16 +12,26 @@ if (
       }
     });
 }
-const walletOwner = Ethers.send("eth_requestAccounts", [])[0];
 
 initState({
   factoryContractAddress: "",
   singletonAddress: "",
-  walletOwners: [walletOwner],
+  walletOwners: [],
   walletNonce: 0,
   threshold: "",
   encondeDatas: "",
+  inputValue: "",
 });
+
+if (state.walletOwners.length == 0) {
+  const accounts = Ethers.send("eth_requestAccounts", []);
+  if (accounts.length) {
+    const checksummedAddr = ethers.utils.getAddress(accounts[0]);
+    State.update({ walletOwners: [checksummedAddr] });
+  } else {
+    return <Web3Connect />;
+  }
+}
 
 //SelectGnosisSafeProxyFactory contract based on current chain ID
 const proxyFactory = fetch(
@@ -93,9 +103,6 @@ const TWStyles = state.styles;
 const css = fetch(
   "https://gist.githubusercontent.com/Pikqi/658b6ee444d26dd69f0d5150797077dd/raw/d8f929729176bb30d86e2839443fddb83a87a685/tw-all-classes.css"
 );
-const fontAwesome = fetch(
-  "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-);
 
 if (!css.ok) {
   return (
@@ -139,12 +146,17 @@ if (!state.styles) {
       .text-green {
         color: ${colors.primaryGreen}
       }
-      .dot {
-        height: 40px;
-        width: 40px;
-        background-color: #bbb;
-        border-radius: 50%;
-        display: inline-block;
+      .cta {
+        border: 1px solid ${colors.primaryGreen};
+        border-radius: 25px;
+        background-color: ${colors.primaryBlack};
+        text-align: center;
+        color: ${colors.primaryGreen};
+
+        &:active {
+          background: ${colors.primaryGreen} !important;
+          color: white !important;
+        }
       }
       ul {
         list-style-type: none;
@@ -155,107 +167,118 @@ if (!state.styles) {
       .border {
         border: 1px solid ${colors.darkGray};
       }
+      .text-input {
+        &:active {
+          border: 1px solid ${colors.primaryGreen} !important;
+        }
+      }
     `,
   });
 }
 
 return (
   <TWStyles>
-    <div className="border-b bg-primary-black text-white text-xl font-bold border px-8 py-3">
-      Create Safe Account
-      <Web3Connect className="bg-primary-black text-green text-xl font-bold ml-80" />
-      <div>
-        <div className="text-green py-3">Owners and Confimations</div>
-        {state.walletOwners.map((walletOwner, index) => (
-          <div className="text-lg font-bold border-b py-3" key={index}>
-            <label className="text-gray text-sm py-1">
-              Owner Address
-              <input
-                className="rounded-full border-opacity-25 bg-primary-dark-gray py-3 px-6"
-                type="text"
-                style={{ width: "82%" }}
-                value={walletOwner}
-                onChange={(e) => {
-                  const a = [...state.walletOwners];
-                  a[index] = e.target.value;
-                  State.update({ walletOwners: a });
-                }}
-              />
-            </label>
+    <div className="border bg-primary-black text-white py-3">
+      <h1 className="text-xl font-bold text-green border-b py-3 px-8">
+        Create Safe
+      </h1>
+      <div className="border-b">
+        <div className="px-8 py-3">
+          <p className="text-lg">Owners and Confimations</p>
+          <ul>
+            {state.walletOwners.map((owner, index) => (
+              <li key={index}>
+                <div className="flex gap-2 items-center">
+                  <div>{owner}</div>
+
+                  <button
+                    className="bg-transparent border-none"
+                    onClick={() => {
+                      const a = [...state.walletOwners];
+                      a.splice(index, 1);
+                      State.update({ walletOwners: a });
+                    }}
+                  >
+                    <svg viewBox="0 0 20 20" fill="#00EC97" className="w-5 h-5">
+                      <path
+                        fill-rule="evenodd"
+                        d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z"
+                        clip-rule="evenodd"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <p className="text-gray">Add new owner</p>
+          <div className="flex gap-2">
+            <input
+              className="rounded-full border-opacity-25 bg-primary-dark-gray py-1 px-6 text-white w-1/2 text-input"
+              type="text"
+              value={state.inputValue}
+              onChange={(e) => State.update({ inputValue: e.target.value })}
+            />
             <button
-              className="rounded-full border-opacity-25 bg-primary-black"
+              className="bg-transparent border-none"
               onClick={() => {
                 const a = [...state.walletOwners];
-                a.splice(index, 1);
+                a.push(state.inputValue);
                 State.update({ walletOwners: a });
               }}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="#00EC97"
-                class="w-5 h-5"
-              >
+              <svg fill="none" viewBox="0 0 24 24" className="w-8 h-8">
                 <path
-                  fill-rule="evenodd"
-                  d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z"
-                  clip-rule="evenodd"
+                  d="m6 12h6m0 0h6m-6 0v6m0-6v-6"
+                  stroke="#00EC97"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
                 />
               </svg>
             </button>
           </div>
-        ))}
-      </div>
-      <button
-        className="bg-primary-black text-green text-sm border-none font-bold "
-        onClick={() => {
-          const a = [...state.walletOwners];
-          a.push("");
-          State.update({ walletOwners: a });
-        }}
-      >
-        + Add new owner
-      </button>
-      <div>
-        <div>
-          <div className="text-green py-3">Threshold</div>
-          <label className="text-gray text-sm py-1">
-            Any transaction requires the confirmation of:
-            <input
-              className="rounded-full border-opacity-25 bg-primary-dark-gray py-3 px-6"
-              type="text"
-              style={{ width: "82%" }}
-              value={threshold}
-              onChange={(e) => {
-                let a = e.target.value;
-                State.update({ threshold: a });
-              }}
-            />
-          </label>
         </div>
       </div>
-      <button
-        className="rounded-full border-opacity-25 bg-primary-black text-green font-bold text-lg"
-        onClick={() => {
-          let a = iface.encodeFunctionData(
-            "setup(address[],uint256, address,bytes, address, address, uint256, address)",
-            [
-              state.walletOwners,
-              state.threshold,
-              address0,
-              bytes0,
-              address0,
-              address0,
-              0,
-              address0,
-            ]
-          );
-          State.update({ encondeDatas: a });
-          createSafeWallet();
-        }}
-      >
-        Create Wallet
-      </button>
+
+      <div className="px-8 py-4">
+        <p className="text-lg">Threshold</p>
+        <p className="text-gray">
+          Any transaction requires the confirmation of:
+        </p>
+        <input
+          className="text-input rounded-full border-opacity-25 bg-primary-dark-gray py-1 px-6 text-white w-1/2"
+          type="text"
+          value={threshold}
+          onChange={(e) => {
+            let a = e.target.value;
+            State.update({ threshold: a });
+          }}
+        />
+
+        <button
+          className="cta px-10 py-2 w-full bg-primary-black mt-5"
+          onClick={() => {
+            let a = iface.encodeFunctionData(
+              "setup(address[],uint256, address,bytes, address, address, uint256, address)",
+              [
+                state.walletOwners,
+                state.threshold,
+                address0,
+                bytes0,
+                address0,
+                address0,
+                0,
+                address0,
+              ]
+            );
+            State.update({ encondeDatas: a });
+            createSafeWallet();
+          }}
+        >
+          Create Wallet
+        </button>
+      </div>
     </div>
   </TWStyles>
 );

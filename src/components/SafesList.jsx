@@ -1,4 +1,4 @@
-import "./SafesList.css";
+import '../styles/globals.css'
 import { useState, useEffect } from "react";
 
 // Inputs: Safe Addr & API URL

@@ -1,4 +1,4 @@
-import "./TransactionsList.css"
+import '../styles/globals.css'
 import { useState, useEffect } from "react"
 import * as Collapsible from "@radix-ui/react-collapsible"
 import { CaretDownIcon, CaretUpIcon } from "@radix-ui/react-icons"

@@ -14,6 +14,7 @@ import { ethers } from "ethers";
 import { useState, useEffect, useMemo } from "react";
 import proxyFactoryAbi from "../abi/proxyFactoryAbi.json"; 
 import singletonAbi from "../abi/singletonAbi.json"; 
+import '../styles/globals.css'
 
 
 export default function CreateSafe({ chain, connectedWalletAddr}){

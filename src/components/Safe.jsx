@@ -1,4 +1,4 @@
-import "./Safe.css";
+import '../styles/globals.css'
 import { useState, useEffect } from "react";
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { CaretUpIcon, CaretDownIcon } from '@radix-ui/react-icons';
@@ -49,7 +49,7 @@ export default function Safe({safeAddr, apiUrl, chainNativeToken}) {
                         <span className="">Ethereum</span>
                     </div>
                 </div>
-                <div className="flex gap-16 items-center">
+                <div className="flex justify-between items-center">
                     <div className="">
                         <p className="text-gray-light">Value</p>
                         <p>${valueInUSD}</p>

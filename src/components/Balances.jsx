@@ -1,4 +1,4 @@
-import './Balances.css'
+import '../styles/globals.css'
 
 const txs = fetch('')
 

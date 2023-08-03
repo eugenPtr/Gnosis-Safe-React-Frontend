@@ -1,12 +1,7 @@
-// Example addresses to use as props
-// "gnosis-chain-safe": "0x6106FB94E31B83D0A15432FCA2927B838fB6D025"
-// "owner-recipient": "0x5d5d4d04B70BFe49ad7Aac8C4454536070dAf180"
-// "gnosis-chain-USDC": "0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83"
-// "mainnet-safe": "0xf7b458443B6a3e2Cd12b315Ed703c98e030b9Bba"
+if (!props.apiBaseUrl || !props.safeAddress)
+  return "[New Transaction] One of the following props is missing: apiBaseUrl, safeAddress";
 
 State.init({
-  chainId: null,
-  baseUrl: "",
   recipient: "",
   value: Number(0), //initialized to 0 to avoid ethers complaints and enable valueless tx
   contract: "",
@@ -25,30 +20,13 @@ State.init({
   origin: "NEAR Blockchain Operating System",
 });
 
-// connect account
 if (state.sender === null) {
   const accounts = Ethers.send("eth_requestAccounts", []);
-  const checksummedAddr = ethers.utils.getAddress(accounts[0]);
   if (accounts.length) {
+    const checksummedAddr = ethers.utils.getAddress(accounts[0]);
     State.update({ sender: checksummedAddr });
-
-    Ethers.provider()
-      .getNetwork()
-      .then((chainIdData) => {
-        if (chainIdData?.chainId == 1) {
-          State.update({
-            chainId: "mainnet",
-          });
-        } else if (chainIdData?.chainId == 5) {
-          State.update({
-            chainId: "goerli",
-          });
-        } else if (chainIdData?.chainId == 100) {
-          State.update({
-            chainId: "gnosis-chain",
-          });
-        }
-      });
+  } else {
+    return <Web3Connect />;
   }
 }
 
@@ -98,9 +76,7 @@ const getNonce = (_contract, _addr, _to, _value) => {
   State.update({ recipient: to });
   State.update({ value: value });
 
-  const baseUrl = `https://safe-transaction-${state.chainId}.safe.global/api`;
-  const url = baseUrl + `/v1/safes/${addr}/`;
-  State.update({ baseUrl: url });
+  const url = props.apiBaseUrl + `api/v1/safes/${addr}/`;
 
   // http options
   const options = {
@@ -171,7 +147,9 @@ const postToSafeApi = () => {
     origin: state.origin,
   };
 
-  const transactionsUrl = state.baseUrl + `multisig-transactions/`;
+  const transactionsUrl =
+    props.apiBaseUrl +
+    `/api/v1/safes/${props.safeAddress}/multisig-transactions/`;
   const params = JSON.stringify(transaction);
   const proposalOptions = {
     method: "POST",
@@ -183,17 +161,12 @@ const postToSafeApi = () => {
   };
 
   // post to gnosis API backend
-  const proposed = asyncFetch(transactionsUrl, proposalOptions).then((res) =>
-    console.log(res)
-  );
+  asyncFetch(transactionsUrl, proposalOptions).then((res) => console.log(res));
 };
 
 const TWStyles = state.styles;
 const css = fetch(
   "https://gist.githubusercontent.com/Pikqi/658b6ee444d26dd69f0d5150797077dd/raw/d8f929729176bb30d86e2839443fddb83a87a685/tw-all-classes.css"
-);
-const fontAwesome = fetch(
-  "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
 );
 
 if (!css.ok) {
@@ -222,7 +195,6 @@ if (!state.styles) {
   State.update({
     styles: styled.div`
       ${css.body}
-      ${fontAwesome.body}
       .bg-primary-black {
         background-color: ${colors.primaryBlack}
       }
@@ -308,7 +280,7 @@ function proposeButton() {
 
 return (
   <TWStyles>
-    <div className="bg-primary-black text-white border max-w-3xl">
+    <div className="bg-primary-black text-white border">
       <h1 className="text-xl font-bold border-b py-3 px-8 text-green">
         New Transaction
       </h1>
@@ -334,10 +306,6 @@ return (
           />
         </div>
         <div className="border-b py-4 px-8">
-          <div className="flex justify-between text-gray pb-2">
-            <span>Amount available</span>
-            <span>13 ETH</span>
-          </div>
           <input
             value={state.value}
             onChange={(e) => State.update({ value: e.target.value })}

@@ -1,36 +1,17 @@
 State.init({
-  chainId: null,
-  baseUrl: "",
   sender: null,
   queuedTransactions: [],
   executedTransactions: [],
   openStates: [],
 });
 
-// connect account
 if (state.sender === null) {
   const accounts = Ethers.send("eth_requestAccounts", []);
-  const checksummedAddr = ethers.utils.getAddress(accounts[0]);
   if (accounts.length) {
+    const checksummedAddr = ethers.utils.getAddress(accounts[0]);
     State.update({ sender: checksummedAddr });
-
-    Ethers.provider()
-      .getNetwork()
-      .then((chainIdData) => {
-        if (chainIdData?.chainId == 1) {
-          State.update({
-            chainId: "mainnet",
-          });
-        } else if (chainIdData?.chainId == 5) {
-          State.update({
-            chainId: "goerli",
-          });
-        } else if (chainIdData?.chainId == 100) {
-          State.update({
-            chainId: "gnosis-chain",
-          });
-        }
-      });
+  } else {
+    return <Web3Connect />;
   }
 }
 
@@ -47,67 +28,63 @@ function isNativeTokenTransfer(tx) {
   return tx.value && !tx.data;
 }
 
-// detect and set given safe address to state
-if (props.safeAddress) {
-  const _baseUrl = `https://safe-transaction-${state.chainId}.safe.global/api`;
-  State.update({ baseUrl: _baseUrl });
+// get proposed transactions from the backend
+const url =
+  props.apiBaseUrl + `/api/v1/safes/${props.safeAddress}/all-transactions`;
+console.log(url);
+const response = fetch(url);
+if (response.ok) {
+  const notExecuted = response.body.results.filter(
+    (tx) =>
+      tx.executionDate === null &&
+      tx.to != props.safeAddress &&
+      (isNativeTokenTransfer(tx) || isERC20Transfer(tx))
+  );
 
-  // get proposed transactions from the backend
-  const url = _baseUrl + `/v1/safes/${props.safeAddress}/all-transactions`;
-  const response = fetch(url);
-  if (response.ok) {
-    const notExecuted = response.body.results.filter(
-      (tx) =>
-        tx.executionDate === null &&
-        tx.to != props.safeAddress &&
-        (isNativeTokenTransfer(tx) || isERC20Transfer(tx))
-    );
-
-    const formattedQueuedTxs = notExecuted.map((tx) => {
-      if (isNativeTokenTransfer(tx)) {
-        return {
-          safeTxHash: tx.safeTxHash,
-          to: tx.to,
-          value: tx.value,
-          data: tx.data,
-          operation: tx.operation,
-          safeTxGas: tx.safeTxGas,
-          baseGas: tx.baseGas,
-          gasPrice: tx.gasPrice,
-          gasToken: tx.gasToken,
-          refundReceiver: tx.refundReceiver,
-          symbol: "xDai",
-          decimals: 18,
-          confirmationsRequired: tx.confirmationsRequired,
-          confirmations: tx.confirmations,
-        };
-      }
-      if (isERC20Transfer(tx)) {
-        const token = fetch(`${state.baseUrl}/v1/tokens/${tx.to}`);
-        return {
-          safeTxHash: tx.safeTxHash,
-          to: tx.dataDecoded.parameters[0].value,
-          value: tx.dataDecoded.parameters[1].value,
-          data: tx.data,
-          operation: tx.operation,
-          safeTxGas: tx.safeTxGas,
-          baseGas: tx.baseGas,
-          gasPrice: tx.gasPrice,
-          gasToken: tx.gasToken,
-          refundReceiver: tx.refundReceiver,
-          symbol: token.body.symbol,
-          decimals: token.body.decimals,
-          confirmationsRequired: tx.confirmationsRequired,
-          confirmations: tx.confirmations,
-        };
-      }
-    });
-    const executed = response.body.results.filter(
-      (tx) => tx.executionDate !== null
-    );
-    State.update({ queuedTransactions: formattedQueuedTxs });
-    State.update({ executedTransactions: executed });
-  }
+  const formattedQueuedTxs = notExecuted.map((tx) => {
+    if (isNativeTokenTransfer(tx)) {
+      return {
+        safeTxHash: tx.safeTxHash,
+        to: tx.to,
+        value: tx.value,
+        data: tx.data,
+        operation: tx.operation,
+        safeTxGas: tx.safeTxGas,
+        baseGas: tx.baseGas,
+        gasPrice: tx.gasPrice,
+        gasToken: tx.gasToken,
+        refundReceiver: tx.refundReceiver,
+        symbol: "xDai",
+        decimals: 18,
+        confirmationsRequired: tx.confirmationsRequired,
+        confirmations: tx.confirmations,
+      };
+    }
+    if (isERC20Transfer(tx)) {
+      const token = fetch(`${props.apiBaseUrl}/api/v1/tokens/${tx.to}`);
+      return {
+        safeTxHash: tx.safeTxHash,
+        to: tx.dataDecoded.parameters[0].value,
+        value: tx.dataDecoded.parameters[1].value,
+        data: tx.data,
+        operation: tx.operation,
+        safeTxGas: tx.safeTxGas,
+        baseGas: tx.baseGas,
+        gasPrice: tx.gasPrice,
+        gasToken: tx.gasToken,
+        refundReceiver: tx.refundReceiver,
+        symbol: token.body.symbol,
+        decimals: token.body.decimals,
+        confirmationsRequired: tx.confirmationsRequired,
+        confirmations: tx.confirmations,
+      };
+    }
+  });
+  const executed = response.body.results.filter(
+    (tx) => tx.executionDate !== null
+  );
+  State.update({ queuedTransactions: formattedQueuedTxs });
+  State.update({ executedTransactions: executed });
 }
 
 // choose relevant transaction to sign and confirm
@@ -122,7 +99,8 @@ const signTransaction = (safeTxHash) => {
     const setV = ethers.utils.hexDataSlice(sig, 0, 64) + "1f";
 
     const url =
-      state.baseUrl + `/v1/multisig-transactions/${safeTxHash}/confirmations/`;
+      props.apiBaseUrl +
+      `/api/v1/multisig-transactions/${safeTxHash}/confirmations/`;
     const params = JSON.stringify({ signature: setV });
     const options = {
       method: "POST",
@@ -153,7 +131,7 @@ const execTransaction = (tx) => {
     safeContract = new ethers.Contract(props.safeAddress, abiJson, signer);
     const signatures = tx.confirmations.map((obj) => obj.signature);
 
-    const data = tx.data == null ? '0x' : tx.data;
+    const data = tx.data == null ? "0x" : tx.data;
 
     // todo contract call seems entirely correct but throws gas estimation error
     safeContract.execTransaction(
@@ -170,19 +148,6 @@ const execTransaction = (tx) => {
     );
   }
 };
-
-// I don't know any CSS so please forgive the following fuckery
-const Selection = styled.button`
-  background: ${(tx) =>
-    state.selectedTransaction == tx ? "palevioletred" : "white"};
-  color: ${(props) => (props.primary ? "white" : "palevioletred")};
-
-  font-size: 1em;
-  margin: 1em;
-  padding: 0.25em 1em;
-  border: 2px solid palevioletred;
-  border-radius: 10px;
-`;
 
 const TWStyles = state.styles;
 const css = fetch(
@@ -215,7 +180,6 @@ if (!state.styles) {
   State.update({
     styles: styled.div`
       ${css.body}
-      ${fontAwesome.body}
       .bg-primary-black {
         background-color: ${colors.primaryBlack}
       }
@@ -254,15 +218,14 @@ if (!state.styles) {
       .cta {
         border: 1px solid ${colors.primaryGreen};
         border-radius: 25px;
-        background-color: ${colors.primaryBlack}
+        background-color: ${colors.primaryBlack};
         text-align: center;
-        color: ${colors.primaryGreen}
+        color: ${colors.primaryGreen};
 
-      }
-      input:active
-      {
-        border: 1px solid ${colors.primaryGreen}
-        background-color: ${colors.primaryGreen}
+        &:active {
+          background: ${colors.primaryGreen} !important;
+          color: white !important;
+        }
       }
     `,
   });
@@ -290,13 +253,13 @@ return (
       <Tabs.Root className="" defaultValue="tab1">
         <Tabs.List className="grid grid-cols-2 text-center " aria-label="">
           <Tabs.Trigger
-            className="py-3 px-5 border border-gray-dark hover:text-primary-green focus:text-primary-green focus:border-b-primary-green focus:border-b"
+            className="py-3 px-5 border bg-primary-black text-white  hover:text-primary-green focus:text-primary-green focus:border-b-primary-green focus:border-b"
             value="tab1"
           >
             Queue
           </Tabs.Trigger>
           <Tabs.Trigger
-            className="py-3 px-5 border border-gray-dark hover:text-primary-green focus:text-primary-green focus:border-b-primary-green focus:border-b"
+            className="py-3 px-5 border bg-primary-black text-white hover:text-primary-green focus:text-primary-green focus:border-b-primary-green focus:border-b"
             value="tab2"
           >
             History
@@ -309,7 +272,7 @@ return (
               <li className="px-4 py-3 bg-gray-dark rounded-md" key={index}>
                 <Collapsible.Root
                   className=""
-                  open={openStates[index]}
+                  open={state.openStates[index]}
                   onOpenChange={() => toggleOpen(index)}
                 >
                   <div className="flex justify-between">
@@ -318,52 +281,33 @@ return (
                       {tx.value / Math.pow(10, tx.decimals)} {tx.symbol}
                     </span>
                     <Collapsible.Trigger asChild>
-                      <button className="">
-                        {openStates[index] ? (
+                      <span className="">
+                        {state.openStates[index] ? (
+                          <svg className="h-8 w-8" viewBox="0 0 24 24">
+                            <path
+                              d="m15 11-3 3-3-3"
+                              stroke="#00ec97"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                            />
+                          </svg>
+                        ) : (
                           <svg
-                            fill="none"
                             stroke="#00ec97"
                             className="h-8 w-8"
                             viewBox="0 0 24 24"
                           >
-                            {" "}
                             <path
                               d="m9 13 3-3 3 3"
                               stroke="#00ec97"
                               stroke-linecap="round"
                               stroke-linejoin="round"
                               stroke-width="2"
-                            />{" "}
-                          </svg>
-                        ) : (
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            className="h-8 w-8"
-                          >
-                            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                            <g
-                              id="SVGRepo_tracerCarrier"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                            ></g>
-                            <g id="SVGRepo_iconCarrier">
-                              {" "}
-                              <g id="Arrow / Caret_Down_SM">
-                                {" "}
-                                <path
-                                  id="Vector"
-                                  d="M15 11L12 14L9 11"
-                                  stroke="#00ec97"
-                                  stroke-width="2"
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                ></path>{" "}
-                              </g>{" "}
-                            </g>
+                            />
                           </svg>
                         )}
-                      </button>
+                      </span>
                     </Collapsible.Trigger>
                   </div>
 
@@ -376,12 +320,16 @@ return (
                         </p>
                         {tx.confirmations?.length ==
                         tx.confirmationsRequired ? (
-                          <button onClick={() => execTransaction(tx)}>
+                          <button
+                            className="cta px-10 py-2 bg-primary-black"
+                            onClick={() => execTransaction(tx)}
+                          >
                             {" "}
                             Execute{" "}
                           </button>
                         ) : (
                           <button
+                            className="cta px-10 py-2 bg-primary-black"
                             onClick={() => signTransaction(tx.safeTxHash)}
                           >
                             {" "}
@@ -407,7 +355,7 @@ return (
               <li className="px-4 py-3 bg-gray-dark rounded-md" key={index}>
                 <Collapsible.Root
                   className=""
-                  open={openStates[index]}
+                  open={state.openStates[index]}
                   onOpenChange={() => toggleOpen(index)}
                 >
                   <div className="flex justify-between">
@@ -416,52 +364,33 @@ return (
                       {tx.executionDate === null ? "Queued" : "Executed"}
                     </span>
                     <Collapsible.Trigger asChild>
-                      <button className="">
-                        {openStates[index] ? (
+                      <span className="">
+                        {state.openStates[index] ? (
+                          <svg className="h-8 w-8" viewBox="0 0 24 24">
+                            <path
+                              d="m15 11-3 3-3-3"
+                              stroke="#00ec97"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                            />
+                          </svg>
+                        ) : (
                           <svg
-                            fill="none"
                             stroke="#00ec97"
                             className="h-8 w-8"
                             viewBox="0 0 24 24"
                           >
-                            {" "}
                             <path
                               d="m9 13 3-3 3 3"
                               stroke="#00ec97"
                               stroke-linecap="round"
                               stroke-linejoin="round"
                               stroke-width="2"
-                            />{" "}
-                          </svg>
-                        ) : (
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            className="h-8 w-8"
-                          >
-                            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                            <g
-                              id="SVGRepo_tracerCarrier"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                            ></g>
-                            <g id="SVGRepo_iconCarrier">
-                              {" "}
-                              <g id="Arrow / Caret_Down_SM">
-                                {" "}
-                                <path
-                                  id="Vector"
-                                  d="M15 11L12 14L9 11"
-                                  stroke="#00ec97"
-                                  stroke-width="2"
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                ></path>{" "}
-                              </g>{" "}
-                            </g>
+                            />
                           </svg>
                         )}
-                      </button>
+                      </span>
                     </Collapsible.Trigger>
                   </div>
 
